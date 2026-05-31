@@ -1,276 +1,472 @@
 package main
+
 import "fmt"
 
-type mahasiswa struct {
-	NIM	 string
-	Nama string
-	tunggakan int
-	statuspembayaraan bool
-	riwayat [100]transaksi
-	jumlahbayar int
-	
+const TARGET_IURAN = 500000
+
+type Transaksi struct {
+	Tanggal string
+	Nominal int
+}
+
+type Mahasiswa struct {
+	NIM             string
+	Nama            string
+	Tunggakan       int
+	StatusLunas     bool
+	RiwayatBayar    [100]Transaksi
+	JumlahTransaksi int
 }
 
 type Database struct {
-	mahasiswa [100]mahasiswa
-	mahasiswaCount int
-
+	DataMahasiswa [100]Mahasiswa
+	JumlahData    int
 }
 
-type transaksi struct {
-	tanggal string
-	nominal int
-}
+var db Database
 
-var DB Database
+func main() {
+	for {
+		fmt.Println("============================================================================")
+		fmt.Println("                          SISTEM KAS MAHASISWA")
+		fmt.Println("============================================================================")
+		fmt.Println(" 1. Kelola Data Mahasiswa")
+		fmt.Println(" 2. Bayar Kas")
+		fmt.Println(" 3. Cari Mahasiswa")
+		fmt.Println(" 0. Keluar")
+		fmt.Println("----------------------------------------------------------------------------")
+		fmt.Print(" Pilihan Anda : ")
+		var pilih int
+		fmt.Scan(&pilih)
+		fmt.Scanln()
 
-func tambah(A *Database) {
-	if A.mahasiswaCount < 100 {
-	
-		var mhs mahasiswa
-
-		fmt.Print("Nama: ")
-		fmt.Scan(&mhs.Nama)
-
-		fmt.Print("NIM: ")
-		fmt.Scan(&mhs.NIM)
-
-		mhs.tunggakan = 0
-		mhs.statuspembayaraan = false
-		A.mahasiswa[A.mahasiswaCount] = mhs
-		A.mahasiswaCount++
-		fmt.Println("== Mahasiswa Berhasil Ditambahkan ==")
-	} else {
-		fmt.Println("== Database Mahasiswa Penuh ==")
+		switch pilih {
+		case 1:
+			menuKelolaData()
+		case 2:
+			prosesPembayaran()
+		case 3:
+			menuCariMahasiswa()
+		case 0:
+			fmt.Println("\n                 Terima kasih telah menggunakan sistem ini.")
+			fmt.Println("============================================================================")
+			return
+		default:
+			fmt.Println(" Pilihan tidak valid. Silakan ulangi.")
+			fmt.Println("============================================================================")
+		}
 	}
 }
 
-func ubah(A *Database) {
-	var nim string
-	var indeks int
+// ==================== KELOLA DATA ====================
+func menuKelolaData() {
+	for {
+		fmt.Println("============================================================================")
+		fmt.Println("                         KELOLA DATA MAHASISWA")
+		fmt.Println("============================================================================")
+		fmt.Println(" 1. Tambah Mahasiswa")
+		fmt.Println(" 2. Ubah Mahasiswa")
+		fmt.Println(" 3. Hapus Mahasiswa")
+		fmt.Println(" 0. Kembali")
+		fmt.Println("----------------------------------------------------------------------------")
+		fmt.Print(" Pilihan Anda : ")
+		var pilih int
+		fmt.Scan(&pilih)
+		fmt.Scanln()
+		switch pilih {
+		case 1:
+			tambahMahasiswa()
+		case 2:
+			ubahMahasiswa()
+		case 3:
+			hapusMahasiswa()
+		case 0:
+			return
+		default:
+			fmt.Println(" Pilihan tidak valid.")
+			fmt.Println("============================================================================")
+		}
+	}
+}
 
+func cariIndeksBerdasarkanNIM(nim string) int {
+	for i := 0; i < db.JumlahData; i++ {
+		if db.DataMahasiswa[i].NIM == nim {
+			return i
+		}
+	}
+	return -1
+}
 
-	fmt.Print("Masukkan NIM Mahasiswa yang akan diupdate: ")
-	fmt.Scan(&nim)
-	squential(A, nim, &indeks)
-
-	if indeks == -1 {
-		fmt.Println("== Mahasiswa Tidak Ditemukan ==")
+func tambahMahasiswa() {
+	fmt.Println("============================================================================")
+	fmt.Println("                           TAMBAH MAHASISWA")
+	fmt.Println("----------------------------------------------------------------------------")
+	if db.JumlahData == 100 {
+		fmt.Println(" ERROR: Kapasitas database penuh (maksimal 100).")
+		fmt.Println("============================================================================")
 		return
-	}else {
-		fmt.Print("Nama: ")
-		fmt.Scan(&A.mahasiswa[indeks].Nama)
-
-		fmt.Print("NIM: ")
-		fmt.Scan(&A.mahasiswa[indeks].NIM)
-		
-		fmt.Println("== Mahasiswa Berhasil Diupdate ==")
 	}
-}
-
-func hapus(A *Database) {
-	var nim string
-	var indeks int
-	var i int
-
-	fmt.Print("Masukkan NIM Mahasiswa yang akan dihapus: ")
-	fmt.Scan(&nim)
-
-	squential(A, nim, &indeks)
-	if indeks == -1 {
-		fmt.Println("== Mahasiswa Tidak Ditemukan ==")
-		
-	}else {
-		for i = indeks; i < A.mahasiswaCount-1; i++ {
-			A.mahasiswa[i] = A.mahasiswa[i+1]
-		}
-		A.mahasiswaCount--
-		fmt.Println("== Mahasiswa Berhasil Dihapus ==")
+	var m Mahasiswa
+	fmt.Print(" NIM   : ")
+	fmt.Scanln(&m.NIM)
+	fmt.Print(" Nama  : ")
+	fmt.Scanln(&m.Nama)
+	if m.NIM == "" || m.Nama == "" {
+		fmt.Println(" ERROR: NIM dan Nama tidak boleh kosong.")
+		fmt.Println("============================================================================")
+		return
 	}
-}
-
-// func cariMahasiswa(A *Database, nim string) int {
-// 	var i int
-// 	var indeks int
-// 	indeks = -1
-	
-// 	for i = 0; i < A.mahasiswaCount; i++ {
-// 		if A.mahasiswa[i].NIM == nim {
-// 			indeks = i
-		
-// 			i = i + 1
-// 		}
-
-// 	}
-// 	return indeks
-// }
-
-func squential(A *Database, nim string, indeks *int){
-	var i int
-	*indeks = -1
-
-	for i = 0; i < A.mahasiswaCount; i++ {
-		if A.mahasiswa[i].NIM == nim {
-			*indeks = i
+	if cariIndeksBerdasarkanNIM(m.NIM) != -1 {
+		fmt.Println(" ERROR: NIM sudah terdaftar.")
+		fmt.Println("============================================================================")
+		return
+	}
+	for i := 0; i < db.JumlahData; i++ {
+		if db.DataMahasiswa[i].Nama == m.Nama {
+			fmt.Println(" ERROR: Nama sudah digunakan oleh mahasiswa lain.")
+			fmt.Println("============================================================================")
+			return
 		}
 	}
+	m.Tunggakan = TARGET_IURAN
+	m.StatusLunas = false
+	m.JumlahTransaksi = 0
+	db.DataMahasiswa[db.JumlahData] = m
+	db.JumlahData++
+	fmt.Println(" BERHASIL: Mahasiswa berhasil ditambahkan.")
+	fmt.Println("============================================================================")
 }
 
-func cari_squential(A *Database) {
+func ubahMahasiswa() {
+	fmt.Println("============================================================================")
+	fmt.Println("                           UPDATE MAHASISWA")
+	fmt.Println("----------------------------------------------------------------------------")
+	if db.JumlahData == 0 {
+		fmt.Println(" Database mahasiswa kosong.")
+		fmt.Println("============================================================================")
+		return
+	}
 	var nim string
-	var indeks int
-	
-	fmt.Println("====")
-	fmt.Print("Masukkan NIM Mahasiswa yang akan dicari: ")
-	fmt.Scan(&nim)
-	squential(A, nim, &indeks)
-	if indeks == -1 {
-		fmt.Println("== Mahasiswa Tidak Ditemukan ==")
+	fmt.Print(" NIM mahasiswa yang akan diubah : ")
+	fmt.Scanln(&nim)
+	idx := cariIndeksBerdasarkanNIM(nim)
+	if idx == -1 {
+		fmt.Println(" ERROR: Mahasiswa tidak ditemukan.")
+		fmt.Println("============================================================================")
+		return
+	}
+	var nimBaru, namaBaru string
+	fmt.Print(" NIM baru (kosongkan jika tidak berubah) : ")
+	fmt.Scanln(&nimBaru)
+	fmt.Print(" Nama baru (kosongkan jika tidak berubah) : ")
+	fmt.Scanln(&namaBaru)
+	if nimBaru != "" {
+		cek := cariIndeksBerdasarkanNIM(nimBaru)
+		if cek != -1 && cek != idx {
+			fmt.Println(" ERROR: NIM baru sudah digunakan oleh mahasiswa lain.")
+			fmt.Println("============================================================================")
+			return
+		}
+		db.DataMahasiswa[idx].NIM = nimBaru
+	}
+	if namaBaru != "" {
+		db.DataMahasiswa[idx].Nama = namaBaru
+	}
+	fmt.Println(" BERHASIL: Data mahasiswa berhasil diubah.")
+	fmt.Println("============================================================================")
+}
+
+func hapusMahasiswa() {
+	fmt.Println("============================================================================")
+	fmt.Println("                           HAPUS MAHASISWA")
+	fmt.Println("----------------------------------------------------------------------------")
+	if db.JumlahData == 0 {
+		fmt.Println(" Database mahasiswa kosong.")
+		fmt.Println("============================================================================")
+		return
+	}
+	var nim string
+	fmt.Print(" NIM mahasiswa yang akan dihapus : ")
+	fmt.Scanln(&nim)
+	idx := cariIndeksBerdasarkanNIM(nim)
+	if idx == -1 {
+		fmt.Println(" ERROR: Mahasiswa tidak ditemukan.")
+		fmt.Println("============================================================================")
+		return
+	}
+	for i := idx; i < db.JumlahData-1; i++ {
+		db.DataMahasiswa[i] = db.DataMahasiswa[i+1]
+	}
+	db.JumlahData--
+	fmt.Println(" BERHASIL: Mahasiswa berhasil dihapus.")
+	fmt.Println("============================================================================")
+}
+
+// ==================== PEMBAYARAN ====================
+func prosesPembayaran() {
+	fmt.Println("============================================================================")
+	fmt.Println("                            PEMBAYARAN KAS")
+	fmt.Println("----------------------------------------------------------------------------")
+	if db.JumlahData == 0 {
+		fmt.Println(" Database mahasiswa kosong.")
+		fmt.Println("============================================================================")
+		return
+	}
+	var nim string
+	fmt.Print(" NIM mahasiswa : ")
+	fmt.Scanln(&nim)
+	idx := cariIndeksBerdasarkanNIM(nim)
+	if idx == -1 {
+		fmt.Println(" ERROR: Mahasiswa tidak ditemukan.")
+		fmt.Println("============================================================================")
+		return
+	}
+	var t Transaksi
+	fmt.Print(" Tanggal (dd/mm/yyyy) : ")
+	fmt.Scanln(&t.Tanggal)
+	fmt.Print(" Nominal pembayaran   : ")
+	fmt.Scanln(&t.Nominal)
+	if t.Nominal <= 0 {
+		fmt.Println(" ERROR: Nominal harus lebih dari 0.")
+		fmt.Println("============================================================================")
+		return
+	}
+	if db.DataMahasiswa[idx].JumlahTransaksi >= 100 {
+		fmt.Println(" ERROR: Riwayat pembayaran penuh (maksimal 100).")
+		fmt.Println("============================================================================")
+		return
+	}
+	db.DataMahasiswa[idx].RiwayatBayar[db.DataMahasiswa[idx].JumlahTransaksi] = t
+	db.DataMahasiswa[idx].JumlahTransaksi++
+	totalDibayar := 0
+	for i := 0; i < db.DataMahasiswa[idx].JumlahTransaksi; i++ {
+		totalDibayar += db.DataMahasiswa[idx].RiwayatBayar[i].Nominal
+	}
+	sisa := TARGET_IURAN - totalDibayar
+	if sisa <= 0 {
+		db.DataMahasiswa[idx].Tunggakan = 0
+		db.DataMahasiswa[idx].StatusLunas = true
+		fmt.Printf(" LUNAS - Total dibayar: Rp %d (kelebihan Rp %d)\n", totalDibayar, -sisa)
 	} else {
-		fmt.Println("NIM  :", A.mahasiswa[indeks].NIM)
-		fmt.Println("Nama :", A.mahasiswa[indeks].Nama)
+		db.DataMahasiswa[idx].Tunggakan = sisa
+		db.DataMahasiswa[idx].StatusLunas = false
+		fmt.Printf(" BERHASIL - Sisa tunggakan: Rp %d\n", sisa)
+	}
+	fmt.Println("============================================================================")
+}
+
+// ==================== PENCARIAN ====================
+func menuCariMahasiswa() {
+	for {
+		fmt.Println("============================================================================")
+		fmt.Println("                            CARI MAHASISWA")
+		fmt.Println("============================================================================")
+		fmt.Println(" 1. Pencarian Sekuensial (Sequential)")
+		fmt.Println(" 2. Pencarian Biner (Binary) - data akan diurut")
+		fmt.Println(" 0. Kembali")
+		fmt.Println("----------------------------------------------------------------------------")
+		fmt.Print(" Pilihan Anda : ")
+		var pilih int
+		fmt.Scan(&pilih)
+		fmt.Scanln()
+		switch pilih {
+		case 1:
+			cariDenganSequential()
+		case 2:
+			cariDenganBinary()
+		case 0:
+			return
+		default:
+			fmt.Println(" Pilihan tidak valid.")
+			fmt.Println("============================================================================")
+		}
 	}
 }
 
-func cari_binary(A *Database) {
-	var nim string
-	var indeks int
-
-	fmt.Print("Masukkan NIM Mahasiswa yang akan dicari: ")
-	fmt.Scan(&nim)
-	sort(A)
-	binary(A, nim, &indeks)
-	if indeks == -1 {
-		fmt.Println("== Mahasiswa Tidak Ditemukan ==")
-	} else {
-		fmt.Println("NIM  :", A.mahasiswa[indeks].NIM)
-		fmt.Println("Nama :", A.mahasiswa[indeks].Nama)
-	}	
+func tampilkanDetailMahasiswa(idx int) {
+	fmt.Println("============================================================================")
+	fmt.Println("                            DATA MAHASISWA")
+	fmt.Println("----------------------------------------------------------------------------")
+	fmt.Printf(" NIM                 : %s\n", db.DataMahasiswa[idx].NIM)
+	fmt.Printf(" Nama                : %s\n", db.DataMahasiswa[idx].Nama)
+	fmt.Printf(" Tunggakan           : Rp %d\n", db.DataMahasiswa[idx].Tunggakan)
+	status := "Belum Lunas"
+	if db.DataMahasiswa[idx].StatusLunas {
+		status = "Lunas"
+	}
+	fmt.Printf(" Status              : %s\n", status)
+	fmt.Println("----------------------------------------------------------------------------")
+	fmt.Print(" Lihat riwayat pembayaran? (y/n) : ")
+	var jawab string
+	fmt.Scanln(&jawab)
+	if jawab == "y" || jawab == "Y" {
+		if db.DataMahasiswa[idx].JumlahTransaksi == 0 {
+			fmt.Println(" Belum ada riwayat pembayaran.")
+		} else {
+			fmt.Println("------------------------------------------------------------------------")
+			fmt.Println("                         RIWAYAT PEMBAYARAN")
+			fmt.Println("------------------------------------------------------------------------")
+			fmt.Printf(" %-3s | %-12s | %-12s\n", "No", "Tanggal", "Nominal")
+			fmt.Println("-----+--------------+-------------")
+			for i := 0; i < db.DataMahasiswa[idx].JumlahTransaksi; i++ {
+				fmt.Printf(" %-3d | %-12s | %-12d\n", i+1, db.DataMahasiswa[idx].RiwayatBayar[i].Tanggal, db.DataMahasiswa[idx].RiwayatBayar[i].Nominal)
+			}
+			fmt.Println("------------------------------------------------------------------------")
+		}
+	}
+	fmt.Println("============================================================================")
 }
 
-func binary(A *Database, nim string, indeks *int) {
-	var kanan, kiri, tengah int
-	
+func cariDenganSequential() {
+	if db.JumlahData == 0 {
+		fmt.Println("============================================================================")
+		fmt.Println(" Database mahasiswa kosong.")
+		fmt.Println("============================================================================")
+		return
+	}
+	fmt.Println("============================================================================")
+	fmt.Println(" Pencarian berdasarkan :")
+	fmt.Println(" 1. NIM")
+	fmt.Println(" 2. Nama")
+	fmt.Println("----------------------------------------------------------------------------")
+	fmt.Print(" Pilihan Anda : ")
+	var pilih int
+	fmt.Scan(&pilih)
+	fmt.Scanln()
+	switch pilih {
+	case 1:
+		var nim string
+		fmt.Print(" Masukkan NIM : ")
+		fmt.Scanln(&nim)
+		idx := cariIndeksBerdasarkanNIM(nim)
+		if idx == -1 {
+			fmt.Println(" Hasil: Mahasiswa tidak ditemukan.")
+			fmt.Println("============================================================================")
+		} else {
+			tampilkanDetailMahasiswa(idx)
+		}
+	case 2:
+		var nama string
+		fmt.Print(" Masukkan Nama : ")
+		fmt.Scanln(&nama)
+		ditemukan := -1
+		for i := 0; i < db.JumlahData; i++ {
+			if db.DataMahasiswa[i].Nama == nama {
+				ditemukan = i
+				break
+			}
+		}
+		if ditemukan == -1 {
+			fmt.Println(" Hasil: Mahasiswa tidak ditemukan.")
+			fmt.Println("============================================================================")
+		} else {
+			tampilkanDetailMahasiswa(ditemukan)
+		}
+	default:
+		fmt.Println(" Pilihan tidak valid.")
+		fmt.Println("============================================================================")
+	}
+}
 
-	*indeks = -1
-	kiri = 0
-	kanan = A.mahasiswaCount - 1
+// ==================== BINARY SEARCH ====================
+func urutkanDataBerdasarkanNIM() {
+	for i := 1; i < db.JumlahData; i++ {
+		temp := db.DataMahasiswa[i]
+		j := i - 1
+		for j >= 0 && db.DataMahasiswa[j].NIM > temp.NIM {
+			db.DataMahasiswa[j+1] = db.DataMahasiswa[j]
+			j--
+		}
+		db.DataMahasiswa[j+1] = temp
+	}
+}
 
+func urutkanDataBerdasarkanNama() {
+	for i := 1; i < db.JumlahData; i++ {
+		temp := db.DataMahasiswa[i]
+		j := i - 1
+		for j >= 0 && db.DataMahasiswa[j].Nama > temp.Nama {
+			db.DataMahasiswa[j+1] = db.DataMahasiswa[j]
+			j--
+		}
+		db.DataMahasiswa[j+1] = temp
+	}
+}
+
+func binarySearchBerdasarkanNIM(nim string) int {
+	kiri, kanan := 0, db.JumlahData-1
 	for kiri <= kanan {
-		tengah = (kiri + kanan) / 2
-		
-		if A.mahasiswa[tengah].NIM == nim {
-			*indeks = tengah
-			kiri = kanan + 1
-		} else if A.mahasiswa[tengah].NIM < nim {
+		tengah := (kiri + kanan) / 2
+		if db.DataMahasiswa[tengah].NIM == nim {
+			return tengah
+		} else if db.DataMahasiswa[tengah].NIM < nim {
 			kiri = tengah + 1
 		} else {
 			kanan = tengah - 1
 		}
 	}
+	return -1
 }
 
-
-func sort(A *Database) {
-	var i, j int
-	var sementara mahasiswa
-
-	for i = 1; i < A.mahasiswaCount-1; i++ {
-		sementara = A.mahasiswa[i]
-		j = i - 1
-		
-		for j >= 0 && A.mahasiswa[j].NIM > sementara.NIM {
-			A.mahasiswa[j+1] = A.mahasiswa[j]
-			j = j - 1
-		}
-		A.mahasiswa[j+1] = sementara
-	}
-}
-
-func tampil(A *Database) {
-
-	var i int
-
-	for i = 0; i < A.mahasiswaCount; i++ {
-		fmt.Println("-----")
-		fmt.Println("Nama :", A.mahasiswa[i].Nama)
-		fmt.Println("NIM  :", A.mahasiswa[i].NIM)
-		fmt.Println("-----")
-	}
-}
-
-func bayar(A *Database) {
-	var nim string
-	var indeks int
-
-	fmt.Print("Masukkan NIM Mahasiswa yang akan melakukan pembayaran: ")
-	fmt.Scan(&nim)
-	squential(A, nim, &indeks)
-
-	if indeks == -1 {
-		fmt.Println("== Mahasiswa Tidak Ditemukan ==")
-	}else{
-		fmt.Print("Masukan Tanggal Pembayaran (DD/MM/YYYY): "
-		fmt.Scan(&transaksi.tanggal)
-
-		
-	}
-
-func main() {
-
-	var pilih int
-	pilih = -1
-
-	for pilih != 0 {
-
-		fmt.Println()
-		fmt.Println("===== SIKAS =====")
-		fmt.Println("1. Tambah")
-		fmt.Println("2. Tampil")
-		fmt.Println("3. Ubah")
-		fmt.Println("4. Hapus")
-		fmt.Println("5. Cari Sequential")
-		fmt.Println("6. Cari Binary")
-		fmt.Println("0. Keluar")
-
-		fmt.Print("Pilih: ")
-		fmt.Scan(&pilih)
-
-		if pilih == 1 {
-
-			tambah(&DB)
-
-		} else if pilih == 2 {
-
-			tampil(&DB)
-
-		} else if pilih == 3 {
-
-			ubah(&DB)
-
-		} else if pilih == 4 {
-
-			hapus(&DB)
-
-		} else if pilih == 5 {
-
-			cari_squential(&DB)
-
-		} else if pilih == 6 {
-
-			cari_binary(&DB)
-
-		} else if pilih == 0 {
-
-			fmt.Println("Selesai")
-
+func binarySearchBerdasarkanNama(nama string) int {
+	kiri, kanan := 0, db.JumlahData-1
+	for kiri <= kanan {
+		tengah := (kiri + kanan) / 2
+		if db.DataMahasiswa[tengah].Nama == nama {
+			return tengah
+		} else if db.DataMahasiswa[tengah].Nama < nama {
+			kiri = tengah + 1
 		} else {
-
-			fmt.Println("Menu salah")
+			kanan = tengah - 1
 		}
 	}
+	return -1
 }
-	
 
-
-	
+func cariDenganBinary() {
+	if db.JumlahData == 0 {
+		fmt.Println("============================================================================")
+		fmt.Println(" Database mahasiswa kosong.")
+		fmt.Println("============================================================================")
+		return
+	}
+	fmt.Println("============================================================================")
+	fmt.Println(" Pencarian Biner (data akan diurutkan otomatis)")
+	fmt.Println(" 1. Berdasarkan NIM")
+	fmt.Println(" 2. Berdasarkan Nama")
+	fmt.Println("----------------------------------------------------------------------------")
+	fmt.Print(" Pilihan Anda : ")
+	var pilih int
+	fmt.Scan(&pilih)
+	fmt.Scanln()
+	switch pilih {
+	case 1:
+		urutkanDataBerdasarkanNIM()
+		var nim string
+		fmt.Print(" Masukkan NIM : ")
+		fmt.Scanln(&nim)
+		idx := binarySearchBerdasarkanNIM(nim)
+		if idx == -1 {
+			fmt.Println(" Hasil: Mahasiswa tidak ditemukan.")
+			fmt.Println("============================================================================")
+		} else {
+			tampilkanDetailMahasiswa(idx)
+		}
+	case 2:
+		urutkanDataBerdasarkanNama()
+		var nama string
+		fmt.Print(" Masukkan Nama : ")
+		fmt.Scanln(&nama)
+		idx := binarySearchBerdasarkanNama(nama)
+		if idx == -1 {
+			fmt.Println(" Hasil: Mahasiswa tidak ditemukan.")
+			fmt.Println("============================================================================")
+		} else {
+			tampilkanDetailMahasiswa(idx)
+		}
+	default:
+		fmt.Println(" Pilihan tidak valid.")
+		fmt.Println("============================================================================")
+	}
+}
